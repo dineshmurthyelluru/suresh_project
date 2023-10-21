@@ -292,7 +292,7 @@ app.put('/documents/:documentId', [
   body('status')
     .notEmpty()
     .isString()
-    .isIn(['IN_PROGRESS', 'PAID', 'UN_PAID'])
+    .isIn(['Pending', 'Approved', 'Rejected'])
     .withMessage('Status is required and must be one of: Pending, Approved, Rejected'),
   body('customer_name').notEmpty().isString().withMessage('Customer name is required'),
 ], async (req, res) => {
@@ -339,6 +339,48 @@ app.delete('/documents/:documentId', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'An error occurred while deleting the document' });
+  }
+});
+
+app.get('/piechart-status', verifyToken, async (req, res) => {
+  try {
+    const statusData = await Document.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Calculate the total count of all documents within the date range
+    const totalCount = statusData.reduce((total, statusItem) => total + statusItem.count, 0);
+
+    // Map status values to the desired capitalization
+    const statusNameMapping = {
+      'IN_PROGRESS': 'Inprogress',
+      'PAID': 'Paid',
+      'UN_PAID': 'Unpaid',
+      // Add more mappings as needed
+    };
+
+    // Calculate the "value" for each status and include the "count" key
+    const pieChartData = statusData.map((statusItem) => ({
+      name: statusNameMapping[statusItem._id] || statusItem._id,
+      value: statusItem.count,
+      status: statusItem._id,
+    }));
+
+    // Include the "total_count" field with the total count of all documents within the date range
+    const response = {
+      total_count: totalCount,
+      details: pieChartData,
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while generating pie chart data' });
   }
 });
 
