@@ -292,7 +292,7 @@ app.put('/documents/:documentId', [
   body('status')
     .notEmpty()
     .isString()
-    .isIn(['Pending', 'Approved', 'Rejected'])
+    .isIn(['IN_PROGRESS', 'PAID', 'UN_PAID'])
     .withMessage('Status is required and must be one of: Pending, Approved, Rejected'),
   body('customer_name').notEmpty().isString().withMessage('Customer name is required'),
 ], async (req, res) => {
